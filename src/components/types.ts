@@ -1,4 +1,4 @@
-import { Conversation } from "@/feature/types";
+
 
 export interface AIResponse {
   suggestions?: string[];
