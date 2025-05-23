@@ -1,24 +1,32 @@
-
-
 export interface AIResponse {
   suggestions?: string[];
   content?: string;
   status?: string;
 }
 
+// Define a proper Conversation type
+export interface Conversation {
+  id: string;
+  title?: string;
+  messages: Message[];
+  createdAt: Date;
+  updatedAt: Date;
+  status?: 'active' | 'archived';
+}
+
 export interface DetailsSidebarProps {
   onAddToComposer?: (content: string) => void;
-  conversation?: any; // You might want to define a proper Conversation type
+  conversation?: Conversation; // Changed from any to Conversation
 }
 
 export interface ChatWindowProps {
-  conversation: any; // Define proper Conversation type
+  conversation: Conversation; // Changed from any to Conversation
   onToggleSidebar: () => void;
   initialContent?: string;
 }
 
 export interface ConversationListProps {
-  conversations: any[]; // Define proper Conversation array type
+  conversations: Conversation[]; // Changed from any[] to Conversation[]
   activeId: string;
   onSelectConversation: (id: string) => void;
 }
