@@ -8,7 +8,7 @@ import { connectWebSocket } from '@/lib/useSocket';
 import { AIResponse,  DetailsSidebarProps } from './types';
 import character from "../../public/ben-sweet-2LowviVHZ-E-unsplash.jpg"
  
-const DetailsSidebar: React.FC<DetailsSidebarProps> = ({ conversation, onAddToComposer, initialContent = '', }) => {
+const DetailsSidebar: React.FC<DetailsSidebarProps> = ({ onAddToComposer }) => {
 
   const [activeTab, setActiveTab] = useState<'copilot' | 'details'>('copilot');
   const [aiData, setAiData] = useState<AIResponse | null>(null);
@@ -18,7 +18,8 @@ const DetailsSidebar: React.FC<DetailsSidebarProps> = ({ conversation, onAddToCo
   const [aiStatus, setAiStatus] = useState<null | string>(null);
   const [streamingText, setStreamingText] = useState<string>('');
   const [isStreaming, setIsStreaming] = useState<boolean>(false);
-   useEffect(() => { 
+  console.log(isStreaming)
+  useEffect(() => { 
     // Enhanced scrolling behavior that ensures messages are visible
     if (chatContainerRef.current) {
       // Use a small timeout to ensure DOM updates are complete
@@ -141,7 +142,7 @@ const DetailsSidebar: React.FC<DetailsSidebarProps> = ({ conversation, onAddToCo
                 );
               }
             } catch (e) {
-              // Skip invalid JSON
+              console.log(e)
             }
           }
         }

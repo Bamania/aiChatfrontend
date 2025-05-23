@@ -7,7 +7,7 @@ export async function POST(request: Request) {
   // Parse the request body
   const body = await request.json();
   console.log("from the frontend", body);
-  const { chatSuggestion, stream = false } = body;
+  const { chatSuggestion, stream = true } = body;
 
   if (stream) {
     // Handle streaming response

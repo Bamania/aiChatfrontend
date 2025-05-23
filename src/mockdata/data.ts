@@ -2,7 +2,7 @@ import { Conversation } from '../feature/types';
 
 // Current date for realistic timestamps
 const now = new Date();
-const minutesAgo = (mins: number) => new Date(now.getTime() - mins * 60000);
+
 const hoursAgo = (hours: number) => new Date(now.getTime() - hours * 60 * 60000);
 
 export const conversations: Conversation[] = [

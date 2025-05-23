@@ -8,7 +8,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-import { Conversation, Message } from '../feature/types';
+import {  Message } from '../feature/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@radix-ui/react-avatar';
 import { connectWebSocket, sendMessage } from '@/lib/useSocket';
 import { ChatWindowProps } from './types';
@@ -20,7 +20,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation, onToggleSidebar, 
  //to track the content 
   const [AiIcon, setAiIcon] = useState(!!initialContent.trim());
   const [isLoadingAI, setIsLoadingAI] = useState(false);
-  const [showToneDropdown, setShowToneDropdown] = useState(false);
+ 
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
