@@ -6,30 +6,56 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 export async function POST(request: Request) {
   // Parse the request body
   const body = await request.json();
-  console.log("from the frotned",body)
-  const { chatSuggestion } = body;
-  const response = await ai.models.generateContent({ 
-        model: "gemini-2.0-flash",
-        contents: `      
-        You are an ai agent that is here for the customer support , that generate content of 50-60 words over this topic ${chatSuggestion} 
-        make sure the output is in the following format only ! which is {content:"generatred_content on the topic"}
-      `,
-      });
-      console.log("response text !",response.text)
- const SplitResponse = response.text?.split("`")
-  if (!SplitResponse) {
-    return { suggestions: [] };
-  }
-  const getSuggestions = SplitResponse[3]?.split("json")
-  if (!getSuggestions || !getSuggestions[1]) {
-    return { suggestions: [] };
-  }
-  const getParsedSuggestions = JSON.parse(getSuggestions[1]);
+  console.log("from the frontend", body);
+  const { chatSuggestion, stream = false } = body;
 
-  // e.g. Insert new user into your DB
+  if (stream) {
+    // Handle streaming response
+    const encoder = new TextEncoder();
+    
+    const readableStream = new ReadableStream({
+      async start(controller) {
+        try {
+          const response = await ai.models.generateContent({ 
+            model: "gemini-2.0-flash",
+            contents: `      
+            You are an AI agent for customer support that generates content of 50-60 words about this topic: ${chatSuggestion} 
+            Provide a helpful and concise response.
+            `,
+          });
 
- 
-  return  NextResponse.json({
-    message:getParsedSuggestions
-  });
+          const responseText = response.text || "";
+          // Simulate streaming by splitting text into chunks
+          const words = responseText.split(' '); //words is an array of the response from the gemini 
+          
+            //now we need to select each words and send it to the backend 
+
+          for (let i = 0; i < words.length; i++) {
+            const chunk = i === 0 ? words[i] : ' ' + words[i];
+           
+            
+            const streamData = `data: ${JSON.stringify({ content: chunk })}\n\n`;
+            controller.enqueue(encoder.encode(streamData));
+            
+            // Add a small delay to simulate real streaming
+            await new Promise(resolve => setTimeout(resolve, 50));
+          }
+          
+          controller.close();
+        } catch (error) {
+          console.error("Streaming error:", error);
+          const errorData = `data: ${JSON.stringify({ error: "Failed to generate content" })}\n\n`;
+          controller.enqueue(encoder.encode(errorData));
+          controller.close();
+        }
+      }
+    });
+     console.log("readable stream !",readableStream)
+    return new Response(readableStream, {
+      headers: {
+        'Content-Type': 'text/plain; charset=utf-8',
+        'Transfer-Encoding': 'chunked',
+      },
+    });
+  } 
 }

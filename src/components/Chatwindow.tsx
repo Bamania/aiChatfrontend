@@ -8,20 +8,17 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 
-
 import { Conversation, Message } from '../feature/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@radix-ui/react-avatar';
 import { connectWebSocket, sendMessage } from '@/lib/useSocket';
 import { ChatWindowProps } from './types';
 
-
-
-const ChatWindow: React.FC<ChatWindowProps> = ({ conversation, onToggleSidebar,initialContent='' }) => {
+const ChatWindow: React.FC<ChatWindowProps> = ({ conversation, onToggleSidebar, initialContent='' }) => {
   const [newMessage, setNewMessage] = useState('');
   const [messages, setMessages] = useState<Message[]>(conversation.messages || []);
-  const [content, setContent] = useState(initialContent)
-  const [isAIGenerated] = useState(!!initialContent) //to track the content 
-  const [AiIcon, setAiIcon] = useState(false)
+  const [content, setContent] = useState(initialContent);
+  const [isAIGenerated] = useState(!!initialContent); //to track the content 
+  const [AiIcon, setAiIcon] = useState(!!initialContent.trim());
   const [isLoadingAI, setIsLoadingAI] = useState(false);
   const [showToneDropdown, setShowToneDropdown] = useState(false);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -29,12 +26,13 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation, onToggleSidebar,i
   useEffect(() => {
     if (initialContent) {
       setContent(initialContent);
+      setAiIcon(!!initialContent.trim());
       // Ensure the composer is open when content is added (imp edge cases)
     }
   }, [initialContent]);
+
   useEffect(() => {
     // the callback function here will define the way u want to handle the data !
-    
     const socket = connectWebSocket(handleIncomingResponse);
     
     return () => {
@@ -42,29 +40,53 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation, onToggleSidebar,i
     };
   }, []);
   
+  const handleIncomingResponse = (msg: any) => {
+    console.log("Incoming response", msg);
+  };
   
-  
-  
-  
-  
-  const handleIncomingResponse=(msg:any)=>{
-   console.log("Incoming response" ,msg)
-  }  
-  const handleContent=()=>{
-    
-  }
+  const handleContent = () => {
+    setShowToneDropdown(!showToneDropdown);
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setContent(e.target.value);
 
-  setContent(e.target.value);
+    if(e.target.value.trim() === '') {
+      setAiIcon(false);
+    } else {
+      setAiIcon(true);
+    }
+  };
 
-  if(e.target.value.trim() === '') {
-    setAiIcon(false);
-  } else {
-    setAiIcon(true);
-  }}
-
-
+  const handleToneSelection = async (tone: string) => {
+    if (!content.trim()) return;
+    
+    try {
+      setIsLoadingAI(true);
+      
+      const response = await fetch('/api/generateContent', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          chatSuggestion: content,
+          tone: tone
+        }),
+      });
+      
+      const data = await response.json();
+      
+      // If successful, update the content with AI-generated text
+      if (data.message && data.message.content) {
+        setContent(data.message.content);
+      }
+    } catch (error) {
+      console.error('Error generating AI content:', error);
+    } finally {
+      setIsLoadingAI(false);
+    }
+  };
 
   const handleSendMessage = () => {
     if (!content.trim()) return;
@@ -86,6 +108,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation, onToggleSidebar,i
     
     // Clear the input field
     setContent('');
+    // Also hide the icon since content is now empty
+    setAiIcon(false);
   };
 
   const formatTimestamp = (timestamp: Date) => {
@@ -99,17 +123,16 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation, onToggleSidebar,i
       <div className="flex items-center justify-between p-4 border-b border-gray-200">
         <div className="flex items-center">
           <h2 className="text-lg font-bold ">{conversation.name}</h2>
-          
         </div>
         
         <div className="flex items-center space-x-2">
-          <button className="p-1 text-gray-600 bg-gray-100 rounded-lg   transition-colors" title="Details" onClick={onToggleSidebar}>
+          <button className="p-1 text-gray-600 bg-gray-100 rounded-lg transition-colors" title="Details" onClick={onToggleSidebar}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M3 7h18M3 12h18M3 17h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
             </svg>
           </button>
           
-          <button className="p-1 bg-gray-100 rounded-lg  transition-colors" title="Snooze">
+          <button className="p-1 bg-gray-100 rounded-lg transition-colors" title="Snooze">
             <MoonStar size={20} />
           </button>
           <button className="px-4 flex justify-center items-center py-1 bg-gray-800 text-white rounded-md hover:bg-gray-900 transition-colors">
@@ -127,10 +150,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation, onToggleSidebar,i
               <div className={`flex max-w-[80%] ${message.sender === 'user' ? 'flex-row' : 'flex-row-reverse'}`}>
                 {message.sender === 'user' && (
                   <div className="flex-shrink-0 mr-2">
-                 <Avatar>
-  <AvatarImage src={conversation.avatar} alt={conversation.name} />
-  <AvatarFallback className={conversation.avatarColor}>{conversation.name[0]}</AvatarFallback>
-</Avatar>
+                    <Avatar>
+                      <AvatarImage src={conversation.avatar} alt={conversation.name} />
+                      <AvatarFallback className={conversation.avatarColor}>{conversation.name[0]}</AvatarFallback>
+                    </Avatar>
                   </div>
                 )}
                 
@@ -149,12 +172,12 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation, onToggleSidebar,i
                 </div>
                 
                 {message.sender === 'agent' && message.status && (
-                    <div className="flex-shrink-0 ml-2 p-1">
+                  <div className="flex-shrink-0 ml-2 p-1">
                     <Avatar>
                       <AvatarImage src="/agent-avatar.png" alt="Agent" />
                       <AvatarFallback className="rounded-full p-1">A</AvatarFallback>
                     </Avatar>
-                    </div>
+                  </div>
                 )}
               </div>
             </div>
@@ -172,116 +195,111 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation, onToggleSidebar,i
       
       {/* Message input */}
       <div className="w-full mx-auto">
-      <div className="bg-white rounded- shadow-sm border border-gray-200">
-        {/* Header */}
-        <div className="px-4 py-2 flex items-center border-b gap-3 border-gray-100 rounded-t-md shadow-sm">
-          <div className="flex items-center text-base font-semibold text-gray-800">
-            <span className="mr-1">Chat</span>
-              className="p-1 rounded-full hover:bg-blue-100 transition-colors"
-              title="Attach file"
-            >Icon && (
-              <Paperclip size={16} className="text-gray-500" />ms-center bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full ml-2 text-xs font-medium animate-pulse">
-            </button>size={14} className="mr-1" />
-            <buttonaft
-              className="p-1 rounded-full hover:bg-blue-100 transition-colors"
-              title="More"
-            >v className="ml-auto flex items-center space-x-2">
-              <MoreHorizontal size={16} className="text-gray-500" />
-            </button>me="p-1 rounded-full hover:bg-blue-100 transition-colors"
-          </div>tle="Attach file"
-        </div>
-              <Paperclip size={16} className="text-gray-500" />
-        {/* Input area */}
-        <div className="p-3">
-          <textareaName="p-1 rounded-full hover:bg-blue-100 transition-colors"
-            className="w-full bg-transparent resize-none focus:outline-none text-sm min-h-[60px]"
-            placeholder="Use ⌘K for shortcuts"
-            rows={1}orizontal size={16} className="text-gray-500" />
-            value={content}
-                onChange={handleChange}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault()
-                handleSendMessage()
-              }area
-            }}f={textareaRef}
-          />className="w-full bg-transparent resize-none focus:outline-none text-sm min-h-[60px]"
-        </div>aceholder="Use ⌘K for shortcuts"
-            rows={1}
-        {/* Footer */}tent}
-        <div className="px-3 py-2 flex justify-between items-center border-t border-gray-100">
-          <div className="flex space-x-3">
-            <button className="text-gray-500 hover:text-gray-700">
-              <Zap size={18} />t()
-            </button>eSendMessage()
-            <button className="text-gray-500 hover:text-gray-700">
-              <Square size={18} />
-            </button>
-            <button className="text-gray-500 hover:text-gray-700">
-              <Smile size={18} />
-            </button>}
-          </div>ssName="px-3 py-2 flex justify-between items-center border-t border-gray-100">
-          <div className="flex items-center">
-            <button className="text-gray-500 hover:text-gray-700">
-              className="bg-white text-gray-700 hover:bg-gray-50 px-3 py-1.5 rounded-md text-sm font-medium flex items-center"
-              onClick={handleSendMessage}
-            <button className="text-gray-500 hover:text-gray-700">
-            > <Square size={18} />
-              Sendon>
-              <ChevronDown size={14} className="ml-1" />gray-700">
-            </button>size={18} />
-          </div>tton>
-        </div>v>
-      </div>iv className="flex items-center">
-    </div>  <button
-    {AiIcon && (    className="bg-white text-gray-700 hover:bg-gray-50 px-3 py-1.5 rounded-md text-sm font-medium flex items-center"
-  <DropdownMenu>          onClick={handleSendMessage}
-    <DropdownMenuTrigger asChild>          
-      <button className="flex items-center bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full ml-2 text-xs font-medium hover:bg-blue-200 transition-colors">            >
-        <Brush size={14} className="mr-1" />
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-export default ChatWindow;};  );    </div>)}  </DropdownMenu>    </DropdownMenuContent>      </DropdownMenuItem>        <span className="mr-2">🌐</span> Translate...      <DropdownMenuItem onClick={() => handleToneSelection('translate')} className="cursor-pointer">      </DropdownMenuItem>        <span className="mr-2">✏️</span> Fix grammar & spelling      <DropdownMenuItem onClick={() => handleToneSelection('fix')} className="cursor-pointer">      </DropdownMenuItem>        <span className="mr-2">🎩</span> More formal      <DropdownMenuItem onClick={() => handleToneSelection('formal')} className="cursor-pointer">      </DropdownMenuItem>        <span className="mr-2">😊</span> More friendly      <DropdownMenuItem onClick={() => handleToneSelection('friendly')} className="cursor-pointer">      </DropdownMenuItem>        <span className="mr-2">💼</span> Professional      <DropdownMenuItem onClick={() => handleToneSelection('professional')} className="cursor-pointer">    <DropdownMenuContent align="start" className="w-48">    </DropdownMenuTrigger>      </button>        )}          </>            <ChevronDown size={12} className="ml-1" />            AI Draft          <>        ) : (          </>            Drafting...            <Loader2 size={12} className="mr-1 animate-spin" />          <>        {isLoadingAI ? (              <ChevronDown size={14} className="ml-1" />
-            </button>
+        <div className="bg-white rounded shadow-sm border border-gray-200">
+          {/* Header */}
+          <div className="px-4 py-2 flex items-center border-b gap-3 border-gray-100 rounded-t-md shadow-sm">
+            <div className="flex items-center text-base font-semibold text-gray-800">
+              <span className="mr-1">Chat</span>
+            </div>
+            
+            {AiIcon && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <button className="flex items-center bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full ml-2 text-xs font-medium hover:bg-blue-200 transition-colors">
+                    <Brush size={14} className="mr-1" />
+                    {isLoadingAI ? (
+                      <>
+                        <Loader2 size={12} className="mr-1 animate-spin" />
+                        Drafting...
+                      </>
+                    ) : (
+                      <>
+                        AI Draft
+                        <ChevronDown size={12} className="ml-1" />
+                      </>
+                    )}
+                  </button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="start" className="w-48">
+                  <DropdownMenuItem onClick={() => handleToneSelection('professional')} className="cursor-pointer">
+                    <span className="mr-2">💼</span> Professional
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleToneSelection('friendly')} className="cursor-pointer">
+                    <span className="mr-2">😊</span> More friendly
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleToneSelection('formal')} className="cursor-pointer">
+                    <span className="mr-2">🎩</span> More formal
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleToneSelection('fix')} className="cursor-pointer">
+                    <span className="mr-2">✏️</span> Fix grammar & spelling
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => handleToneSelection('translate')} className="cursor-pointer">
+                    <span className="mr-2">🌐</span> Translate...
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+            
+            <div className="ml-auto flex items-center space-x-2">
+              <button
+                className="p-1 rounded-full hover:bg-blue-100 transition-colors"
+                title="Attach file"
+              >
+                <Paperclip size={16} className="text-gray-500" />
+              </button>
+              <button
+                className="p-1 rounded-full hover:bg-blue-100 transition-colors"
+                title="More"
+              >
+                <MoreHorizontal size={16} className="text-gray-500" />
+              </button>
+            </div>
+          </div>
+          
+          {/* Input area */}
+          <div className="p-3">
+            <textarea
+              className="w-full bg-transparent resize-none focus:outline-none text-sm min-h-[60px]"
+              placeholder="Use ⌘K for shortcuts"
+              rows={1}
+              value={content}
+              onChange={handleChange}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSendMessage();
+                }
+              }}
+              ref={textareaRef}
+            />
+          </div>
+          
+          {/* Footer */}
+          <div className="px-3 py-2 flex justify-between items-center border-t border-gray-100">
+            <div className="flex space-x-3">
+              <button className="text-gray-500 hover:text-gray-700">
+                <Zap size={18} />
+              </button>
+              <button className="text-gray-500 hover:text-gray-700">
+                <Square size={18} />
+              </button>
+              <button className="text-gray-500 hover:text-gray-700">
+                <Smile size={18} />
+              </button>
+            </div>
+            
+            <div className="flex items-center">
+              <button
+                className="bg-white text-gray-700 hover:bg-gray-50 px-3 py-1.5 rounded-md text-sm font-medium flex items-center"
+                onClick={handleSendMessage}
+              >
+                Send
+                <ChevronDown size={14} className="ml-1" />
+              </button>
+            </div>
           </div>
         </div>
       </div>
-    </div>
     </div>
   );
 };

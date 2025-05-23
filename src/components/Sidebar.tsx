@@ -1,24 +1,24 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { ChevronDown, Plus, Users, Link as LinkIcon, TvMinimal } from 'lucide-react';
+import Image from 'next/image';
+import { ChevronDown, Plus, Users, Link as LinkIcon, TvMinimal, Bot, User } from 'lucide-react';
 // Fix the Avatar import
 import { Avatar, AvatarFallback, AvatarImage } from '@radix-ui/react-avatar';
 import { Conversation } from '../feature/types';
 import { connectWebSocket } from '@/lib/useSocket';
 import { AIResponse, ChatBubbleResponse, DetailsSidebarProps } from './types';
-import axios from 'axios';
-
-
+import character from "../../public/ben-sweet-2LowviVHZ-E-unsplash.jpg"
+ 
 const DetailsSidebar: React.FC<DetailsSidebarProps> = ({ conversation, onAddToComposer, initialContent = '', }) => {
 
   const [activeTab, setActiveTab] = useState<'copilot' | 'details'>('copilot');
   const [aiData, setAiData] = useState<AIResponse | null>(null);
-  const [userInput, setUserInput] = useState<string>('');
-  const [chatMessages, setChatMessages] = useState<{text: string, isUser: boolean}[]>([]);
+  const [userInput, setUserInput] = useState<string>('');  const [chatMessages, setChatMessages] = useState<{text: string, isUser: boolean, isStreaming?: boolean}[]>([]);
   const socketRef = useRef<null | WebSocket>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const [aiStatus, setAiStatus] = useState<null | string>(null);
- 
-  useEffect(() => {
+  const [streamingText, setStreamingText] = useState<string>('');
+  const [isStreaming, setIsStreaming] = useState<boolean>(false);
+   useEffect(() => { 
     // Enhanced scrolling behavior that ensures messages are visible
     if (chatContainerRef.current) {
       // Use a small timeout to ensure DOM updates are complete
@@ -28,7 +28,7 @@ const DetailsSidebar: React.FC<DetailsSidebarProps> = ({ conversation, onAddToCo
         }
       }, 100);
     }
-  }, [chatMessages, aiStatus]); // Also scroll when AI status changes
+  }, [chatMessages, aiStatus, streamingText]); // Also scroll when AI status changes or streaming text updates
 
   const updateAicontext = (msg: string) => {
     console.log("message from server", msg);
@@ -41,7 +41,6 @@ const DetailsSidebar: React.FC<DetailsSidebarProps> = ({ conversation, onAddToCo
       console.error("Failed to parse AI response:", error);
     }
   };
-
   const sendMessage = async () => {
     if (!userInput.trim() || !socketRef.current) return;
     
@@ -51,8 +50,6 @@ const DetailsSidebar: React.FC<DetailsSidebarProps> = ({ conversation, onAddToCo
       isUser: true
     }]);
     
-    // Send the message to the WebSocket server
-    // but also make an api call to generate the content
     try {
       socketRef.current.send(JSON.stringify({ message: userInput }));
       setAiStatus("Thinking...");
@@ -61,42 +58,105 @@ const DetailsSidebar: React.FC<DetailsSidebarProps> = ({ conversation, onAddToCo
       setTimeout(() => setAiStatus("Looking for an answer..."), 1000);
       setTimeout(() => setAiStatus("Generating response..."), 2500);
 
-      const response = await axios.post("/api/generateContent", {
-        chatSuggestion: userInput
-      });
+      // Start streaming response
+      await streamAIResponse(userInput);
       
-      console.log("from the backend", response.data.message);
-      
-      // Extract the text content from the response
-      // The response might be an object with a content property
-      let messageText = '';
-      if (typeof response.data.message === 'string') {
-        messageText = response.data.message;
-      } else if (response.data.message && typeof response.data.message === 'object') {
-        // If message is an object, try to get the content property
-        if (response.data.message.content) {
-          messageText = response.data.message.content;
-        } else {
-          // If no content property, stringify the object (as fallback)
-          messageText = JSON.stringify(response.data.message);
-        }
-      }
-      
-      // Clear AI status once response is ready
-      setAiStatus(null);
-      
-      // Add AI response to chat
-      setChatMessages(prev => [...prev, {
-        text: messageText,
-        isUser: false
-      }]);
     } catch (error) {
       console.error("Error sending message:", error);
       setAiStatus(null);
+      setIsStreaming(false);
     }
     
     // Clear the input field
     setUserInput('');
+  };
+
+  const streamAIResponse = async (message: string) => {
+    try {
+      const response = await fetch("/api/generateContent", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          chatSuggestion: message,
+          stream: true
+        }),
+      });
+
+      if (!response.body) {
+        throw new Error("No response body");
+      }
+
+      // Clear AI status and start streaming
+      setAiStatus(null);
+      setIsStreaming(true);
+      setStreamingText('');
+
+      // Add empty AI message that will be updated with streaming text
+      setChatMessages(prev => [...prev, {
+        text: '',
+        isUser: false,
+        isStreaming: true
+      }]);
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let accumulatedText = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        
+        if (done) {
+          // Streaming complete
+          setIsStreaming(false);
+          setChatMessages(prev => 
+            prev.map((msg, index) => 
+              index === prev.length - 1 && msg.isStreaming 
+                ? { ...msg, text: accumulatedText, isStreaming: false }
+                : msg
+            )
+          );
+          break;
+        }
+
+        const chunk = decoder.decode(value);
+        const lines = chunk.split('\n');
+        
+        for (const line of lines) {
+          if (line.startsWith('data: ')) {
+            try {
+              const data = JSON.parse(line.slice(6));
+              if (data.content) {
+                accumulatedText += data.content;
+                setStreamingText(accumulatedText);
+                
+                // Update the last message with streaming text
+                setChatMessages(prev => 
+                  prev.map((msg, index) => 
+                    index === prev.length - 1 && msg.isStreaming 
+                      ? { ...msg, text: accumulatedText }
+                      : msg
+                  )
+                );
+              }
+            } catch (e) {
+              // Skip invalid JSON
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error streaming AI response:", error);
+      setAiStatus(null);
+      setIsStreaming(false);
+      
+      // Add error message
+      setChatMessages(prev => [...prev, {
+        text: "Sorry, I encountered an error generating a response.",
+        isUser: false
+      }]);
+    }
   };
 
   useEffect(() => {
@@ -198,47 +258,86 @@ const DetailsSidebar: React.FC<DetailsSidebarProps> = ({ conversation, onAddToCo
               style={{ scrollBehavior: 'smooth' }}
             >
               {/* Chat messages */}
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {chatMessages.map((message, index) => (
-                  <div 
-                    key={index} 
-                    className={`flex ${message.isUser ? 'justify-end' : 'justify-start'}`}
-                  >                    <div className="flex flex-col">
-                      <div 
-                        className={`max-w-3/4 py-2 px-3 rounded-lg ${
-                          message.isUser 
-                            ? 'bg-blue-500 text-white rounded-br-none' 
-                            : 'bg-gradient-to-r from-purple-100 to-purple-200 text-gray-800 border border-gray-200 rounded-bl-none'
-                        }`}
-                      >
-                        {message.text}
-                      
-                      
-                      {/* Add to Composer button for AI messages */}
-                      {!message.isUser && onAddToComposer && (
-                        <button
-                          onClick={() => onAddToComposer(message.text)}
-                          className="text-blue-600 text-xs mt-2 flex items-center bg-white rounded-lg p-3 transition-all duration-200 ease-in-out opacity-90 hover:opacity-100 transform hover:scale-105"
-                        >
-                          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-1">
-                          <path d="M12 4V20M20 12L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
-                          </svg>
-                          Add to Composer
-                        </button>
-                      )}
+                  <div key={index} className="w-full">
+                    {message.isUser ? (
+                      // User message section
+                      <div className="mb-6">
+                        {/* YOU header */}
+                        <div className="flex  flex-col  items-start gap-1 ">
+                          <div className="flex  items-center gap-2 ">
+                          <Image src={character} alt="profile img"
+                          className='object-cover w-6 h-6  rounded-full ' />
+                          <span className="text-sm font-medium text-gray-700">YOU</span>
+                          </div>
+                       
+                        {/* User message */}
+                        <div className=" text-black rounded-lg rounded-bl-none max-w-[85%] ml-8">
+                          {message.text}
+                        </div>
+                         </div>
+                        
                       </div>
-                    </div>
+                    ) : (
+                      // AI message section  
+                      <div className="mb-6">
+                        {/* BECHA header */}                        <div className="flex items-center mb-3">
+                          <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center mr-2">
+                           <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="24" height="24" rx="4" fill="white"/>
+                    <rect x="9" y="9" width="6" height="6" rx="2" fill="#8B5CF6"/>
+                    <rect x="10.5" y="11" width="3" height="1.2" rx="0.6" fill="white"/>
+                    <rect x="11.25" y="12.5" width="1.5" height="0.5" rx="0.25" fill="white"/>
+                  </svg>
+                          </div>
+                          <span className="text-sm font-medium text-gray-700">BECHA</span>
+                        </div>
+                          {/* AI message */}
+                        <div className="ml-8">
+                          <div className="bg-gradient-to-r from-purple-100 to-purple-200 text-gray-800 border border-gray-200 py-2 px-3 rounded-lg rounded-bl-none max-w-[85%]">
+                            {message.text}
+                            {message.isStreaming && (
+                              <span className="inline-block w-2 h-4 bg-gray-600 ml-1 animate-pulse"></span>
+                            )}
+                          </div>
+                          
+                          {/* Add to Composer button for AI messages */}
+                          {onAddToComposer && (
+                            <button
+                              onClick={() => onAddToComposer(message.text)}
+                              className="text-blue-600 text-xs mt-2 flex items-center bg-white rounded-lg px-2 py-1 border border-gray-200 hover:bg-gray-50 transition-all duration-200"
+                            >
+                              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-1">
+                                <path d="M12 4V20M20 12L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                              </svg>
+                              Add to Composer
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
                 ))}
                 
                 {/* AI Status thinking indicator */}
                 {aiStatus && (
-                  <div className="flex justify-start">
-                    <div className="bg-gradient-to-r from-purple-100 to-purple-200 text-gray-700 py-2 px-3 rounded-lg max-w-3/4 flex items-center animate-pulse border border-gray-200">
-                      {aiStatus === "Thinking..." && <span className="mr-2">🧠</span>}
-                      {aiStatus === "Looking for an answer..." && <span className="mr-2">🔍</span>}
-                      {aiStatus === "Generating response..." && <span className="mr-2">⚙️</span>}
-                      {aiStatus}
+                  <div className="mb-6">
+                    {/* BECHA header for thinking state */}
+                    <div className="flex items-center mb-3">
+                      <div className="w-6 h-6 bg-purple-500 rounded-full flex items-center justify-center mr-2">
+                        <Bot size={14} className="text-white" />
+                      </div>
+                      <span className="text-sm font-medium text-gray-700">BECHA</span>
+                    </div>
+                    
+                    <div className="ml-8">
+                      <div className="bg-gradient-to-r from-purple-100 to-purple-200 text-gray-700 py-2 px-3 rounded-lg rounded-bl-none max-w-[85%] flex items-center animate-pulse border border-gray-200">
+                        {aiStatus === "Thinking..." && <span className="mr-2">🧠</span>}
+                        {aiStatus === "Looking for an answer..." && <span className="mr-2">🔍</span>}
+                        {aiStatus === "Generating response..." && <span className="mr-2">⚙️</span>}
+                        {aiStatus}
+                      </div>
                     </div>
                   </div>
                 )}

@@ -4,7 +4,7 @@ let socket: WebSocket | null = null;
 // connectWebsocket has a type of a void function here !
 export function connectWebSocket(handleData: (msg: string) => void) {
   if (!socket || socket.readyState !== WebSocket.OPEN) {
-    socket = new WebSocket("ws://localhost:8080"); // your backend websocket server
+    socket = new WebSocket(process.env.NEXT_PUBLIC_SOCKET_URL as string);
 
     socket.onopen = () => {
       console.log("WebSocket connected");

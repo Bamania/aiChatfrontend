@@ -7,13 +7,13 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 export async function POST(req:Request){
     const body =await req.json()
     console.log("naive req.json",body)
-    const {draftContent,tonetype}=body;
+    const {draftContent,tone}=body;
 
 
 const response = await ai.models.generateContent({
     model: "gemini-2.0-flash",
     contents: `
-        Please rewrite the following content in a ${tonetype} tone:
+        Please rewrite the following content in a ${tone} tone:
 
         "${draftContent}"
 
