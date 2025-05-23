@@ -1,6 +1,6 @@
 "use client"
 import React, { useEffect, useState, useRef } from 'react';
-import { MoreHorizontal, Phone, MoonStar, X, Send, Paperclip, Smile, Zap, Trash2, Square, ChevronDown, Heading1, Brush, Check, Loader2 } from 'lucide-react';
+import { MoreHorizontal, MoonStar, X,  Paperclip, Smile, Zap, Square, ChevronDown,  Brush, Loader2 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,10 +14,10 @@ import { connectWebSocket, sendMessage } from '@/lib/useSocket';
 import { ChatWindowProps } from './types';
 
 const ChatWindow: React.FC<ChatWindowProps> = ({ conversation, onToggleSidebar, initialContent='' }) => {
-  const [newMessage, setNewMessage] = useState('');
+  
   const [messages, setMessages] = useState<Message[]>(conversation.messages || []);
   const [content, setContent] = useState(initialContent);
-  const [isAIGenerated] = useState(!!initialContent); //to track the content 
+ //to track the content 
   const [AiIcon, setAiIcon] = useState(!!initialContent.trim());
   const [isLoadingAI, setIsLoadingAI] = useState(false);
   const [showToneDropdown, setShowToneDropdown] = useState(false);
@@ -44,9 +44,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation, onToggleSidebar, 
     console.log("Incoming response", msg);
   };
   
-  const handleContent = () => {
-    setShowToneDropdown(!showToneDropdown);
-  };
+
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setContent(e.target.value);

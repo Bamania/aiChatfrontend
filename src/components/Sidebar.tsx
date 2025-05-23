@@ -1,11 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
-import { ChevronDown, Plus, Users, Link as LinkIcon, TvMinimal, Bot, User } from 'lucide-react';
+import {  Users, Link as  TvMinimal, Bot, } from 'lucide-react';
 // Fix the Avatar import
 import { Avatar, AvatarFallback, AvatarImage } from '@radix-ui/react-avatar';
-import { Conversation } from '../feature/types';
+
 import { connectWebSocket } from '@/lib/useSocket';
-import { AIResponse, ChatBubbleResponse, DetailsSidebarProps } from './types';
+import { AIResponse,  DetailsSidebarProps } from './types';
 import character from "../../public/ben-sweet-2LowviVHZ-E-unsplash.jpg"
  
 const DetailsSidebar: React.FC<DetailsSidebarProps> = ({ conversation, onAddToComposer, initialContent = '', }) => {
