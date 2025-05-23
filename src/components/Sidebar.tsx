@@ -1,11 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
-import {  Users, Link as  TvMinimal, Bot, } from 'lucide-react';
+import { Users, TvMinimal, Bot } from 'lucide-react';
 // Fix the Avatar import
 import { Avatar, AvatarFallback, AvatarImage } from '@radix-ui/react-avatar';
 
 import { connectWebSocket } from '@/lib/useSocket';
-import { AIResponse,  DetailsSidebarProps } from './types';
+import { AIResponse, DetailsSidebarProps } from './types';
 import character from "../../public/ben-sweet-2LowviVHZ-E-unsplash.jpg"
  
 const DetailsSidebar: React.FC<DetailsSidebarProps> = ({ onAddToComposer }) => {
@@ -219,7 +219,7 @@ const DetailsSidebar: React.FC<DetailsSidebarProps> = ({ onAddToComposer }) => {
                     <rect x="11.25" y="12.5" width="1.5" height="0.5" rx="0.25" fill="#1F2937"/>
                   </svg>
                 </div>
-                <h3 className="text-lg font-medium mb-2">Hi, I'm Becha Ai</h3>
+<h3 className="text-lg font-medium mb-2">Hi, I&apos;m Becha Ai</h3>
                 <p className="text-gray-500 text-sm mb-4">Ask me anything about this conversation.</p>
               </div>              {/* Show only one suggestion from WebSocket if available */}
               {aiData && aiData.suggestions && aiData.suggestions.length > 0 && (

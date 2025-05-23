@@ -11,7 +11,7 @@ import {
 import {  Message } from '../feature/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@radix-ui/react-avatar';
 import { connectWebSocket, sendMessage } from '@/lib/useSocket';
-import { ChatWindowProps } from './types';
+import { ChatWindowProps, WebSocketMessage } from './types';
 
 const ChatWindow: React.FC<ChatWindowProps> = ({ conversation, onToggleSidebar, initialContent='' }) => {
   
@@ -40,10 +40,9 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation, onToggleSidebar, 
     };
   }, []);
   
-  const handleIncomingResponse = (msg: any) => {
+   const handleIncomingResponse = (msg: WebSocketMessage) => {
     console.log("Incoming response", msg);
   };
-  
 
 
   const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
