@@ -1,6 +1,12 @@
 "use client"
-import React, { useEffect, useState } from 'react';
-import { MoreHorizontal, Phone, MoonStar, X, Send, Paperclip, Smile, Zap, Trash2, Square, ChevronDown } from 'lucide-react';
+import React, { useEffect, useState, useRef } from 'react';
+import { MoreHorizontal, Phone, MoonStar, X, Send, Paperclip, Smile, Zap, Trash2, Square, ChevronDown, Heading1, Brush, Check, Loader2 } from 'lucide-react';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 
 import { Conversation, Message } from '../feature/types';
@@ -13,41 +19,73 @@ import { ChatWindowProps } from './types';
 const ChatWindow: React.FC<ChatWindowProps> = ({ conversation, onToggleSidebar,initialContent='' }) => {
   const [newMessage, setNewMessage] = useState('');
   const [messages, setMessages] = useState<Message[]>(conversation.messages || []);
+  const [content, setContent] = useState(initialContent)
+  const [isAIGenerated] = useState(!!initialContent) //to track the content 
+  const [AiIcon, setAiIcon] = useState(false)
+  const [isLoadingAI, setIsLoadingAI] = useState(false);
+  const [showToneDropdown, setShowToneDropdown] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+
+  useEffect(() => {
+    if (initialContent) {
+      setContent(initialContent);
+      // Ensure the composer is open when content is added (imp edge cases)
+    }
+  }, [initialContent]);
+  useEffect(() => {
+    // the callback function here will define the way u want to handle the data !
+    
+    const socket = connectWebSocket(handleIncomingResponse);
+    
+    return () => {
+      socket.close(); 
+    };
+  }, []);
+  
+  
+  
+  
+  
+  
   const handleIncomingResponse=(msg:any)=>{
    console.log("Incoming response" ,msg)
   }  
-  const [content, setContent] = useState(initialContent)
-    const [isAIGenerated] = useState(!!initialContent) //to track the content 
-   useEffect(() => {
-      if (initialContent) {
-        setContent(initialContent);
-        // Ensure the composer is open when content is added
-      }
-    }, [initialContent]);
- useEffect(() => {
-  // the callback function here will define the way u want to handle the data !
-  
-  const socket = connectWebSocket(handleIncomingResponse);
+  const handleContent=()=>{
+    
+  }
 
-    return () => {
-      socket.close(); // clean up on component unmount
-    };
-  }, []);
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+
+  setContent(e.target.value);
+
+  if(e.target.value.trim() === '') {
+    setAiIcon(false);
+  } else {
+    setAiIcon(true);
+  }}
+
+
 
   const handleSendMessage = () => {
-    if (!newMessage.trim()) return;
-    sendMessage(newMessage)
+    if (!content.trim()) return;
+    
+    // Send message to websocket
+    sendMessage(content);
+    
+    // Create new message object
     const newMsg: Message = {
       id: `msg-${Date.now()}`,
-      content: newMessage,
-      sender: 'agent',
+      content: content,
+      sender: 'agent', // Assuming 'agent' means messages sent by the current user
       timestamp: new Date(),
       status: 'sent'
     };
-   
     
+    // Add message to the messages array
     setMessages([...messages, newMsg]);
-    setNewMessage('');
+    
+    // Clear the input field
+    setContent('');
   };
 
   const formatTimestamp = (timestamp: Date) => {
@@ -134,53 +172,111 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation, onToggleSidebar,i
       
       {/* Message input */}
       <div className="w-full mx-auto">
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200">
+      <div className="bg-white rounded- shadow-sm border border-gray-200">
         {/* Header */}
-        <div className="px-4 py-2 flex items-center border-b border-gray-100">
-          <div className="flex items-center text-sm font-medium text-gray-700">
-            <span>Chat</span>
-            <ChevronDown size={16} className="ml-1" />
-          </div>
-        
+        <div className="px-4 py-2 flex items-center border-b gap-3 border-gray-100 rounded-t-md shadow-sm">
+          <div className="flex items-center text-base font-semibold text-gray-800">
+            <span className="mr-1">Chat</span>
+              className="p-1 rounded-full hover:bg-blue-100 transition-colors"
+              title="Attach file"
+            >Icon && (
+              <Paperclip size={16} className="text-gray-500" />ms-center bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full ml-2 text-xs font-medium animate-pulse">
+            </button>size={14} className="mr-1" />
+            <buttonaft
+              className="p-1 rounded-full hover:bg-blue-100 transition-colors"
+              title="More"
+            >v className="ml-auto flex items-center space-x-2">
+              <MoreHorizontal size={16} className="text-gray-500" />
+            </button>me="p-1 rounded-full hover:bg-blue-100 transition-colors"
+          </div>tle="Attach file"
         </div>
-
+              <Paperclip size={16} className="text-gray-500" />
         {/* Input area */}
         <div className="p-3">
-          <textarea
+          <textareaName="p-1 rounded-full hover:bg-blue-100 transition-colors"
             className="w-full bg-transparent resize-none focus:outline-none text-sm min-h-[60px]"
             placeholder="Use ⌘K for shortcuts"
-            rows={1}
- value={content}
-                onChange={(e) => setContent(e.target.value)}
+            rows={1}orizontal size={16} className="text-gray-500" />
+            value={content}
+                onChange={handleChange}
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
                 e.preventDefault()
                 handleSendMessage()
-              }
-            }}
-          />
-        </div>
-
-        {/* Footer */}
+              }area
+            }}f={textareaRef}
+          />className="w-full bg-transparent resize-none focus:outline-none text-sm min-h-[60px]"
+        </div>aceholder="Use ⌘K for shortcuts"
+            rows={1}
+        {/* Footer */}tent}
         <div className="px-3 py-2 flex justify-between items-center border-t border-gray-100">
           <div className="flex space-x-3">
             <button className="text-gray-500 hover:text-gray-700">
-              <Zap size={18} />
-            </button>
+              <Zap size={18} />t()
+            </button>eSendMessage()
             <button className="text-gray-500 hover:text-gray-700">
               <Square size={18} />
             </button>
             <button className="text-gray-500 hover:text-gray-700">
               <Smile size={18} />
-            </button>
-          </div>
+            </button>}
+          </div>ssName="px-3 py-2 flex justify-between items-center border-t border-gray-100">
           <div className="flex items-center">
-            <button
+            <button className="text-gray-500 hover:text-gray-700">
               className="bg-white text-gray-700 hover:bg-gray-50 px-3 py-1.5 rounded-md text-sm font-medium flex items-center"
               onClick={handleSendMessage}
-            >
-              Send
-              <ChevronDown size={14} className="ml-1" />
+            <button className="text-gray-500 hover:text-gray-700">
+            > <Square size={18} />
+              Sendon>
+              <ChevronDown size={14} className="ml-1" />gray-700">
+            </button>size={18} />
+          </div>tton>
+        </div>v>
+      </div>iv className="flex items-center">
+    </div>  <button
+    {AiIcon && (    className="bg-white text-gray-700 hover:bg-gray-50 px-3 py-1.5 rounded-md text-sm font-medium flex items-center"
+  <DropdownMenu>          onClick={handleSendMessage}
+    <DropdownMenuTrigger asChild>          
+      <button className="flex items-center bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full ml-2 text-xs font-medium hover:bg-blue-200 transition-colors">            >
+        <Brush size={14} className="mr-1" />
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+export default ChatWindow;};  );    </div>)}  </DropdownMenu>    </DropdownMenuContent>      </DropdownMenuItem>        <span className="mr-2">🌐</span> Translate...      <DropdownMenuItem onClick={() => handleToneSelection('translate')} className="cursor-pointer">      </DropdownMenuItem>        <span className="mr-2">✏️</span> Fix grammar & spelling      <DropdownMenuItem onClick={() => handleToneSelection('fix')} className="cursor-pointer">      </DropdownMenuItem>        <span className="mr-2">🎩</span> More formal      <DropdownMenuItem onClick={() => handleToneSelection('formal')} className="cursor-pointer">      </DropdownMenuItem>        <span className="mr-2">😊</span> More friendly      <DropdownMenuItem onClick={() => handleToneSelection('friendly')} className="cursor-pointer">      </DropdownMenuItem>        <span className="mr-2">💼</span> Professional      <DropdownMenuItem onClick={() => handleToneSelection('professional')} className="cursor-pointer">    <DropdownMenuContent align="start" className="w-48">    </DropdownMenuTrigger>      </button>        )}          </>            <ChevronDown size={12} className="ml-1" />            AI Draft          <>        ) : (          </>            Drafting...            <Loader2 size={12} className="mr-1 animate-spin" />          <>        {isLoadingAI ? (              <ChevronDown size={14} className="ml-1" />
             </button>
           </div>
         </div>

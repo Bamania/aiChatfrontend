@@ -3,20 +3,20 @@ import React, { useState } from 'react';
 import ConversationList from '../components/Conversational';
 import ChatWindow from '../components/Chatwindow'
 import DetailsSidebar from '../components/Sidebar';
-import Composer from '../components/composer';
+
 import { conversations, activeConversation } from '../mockdata/data';
 
 const ChatInterface: React.FC = () => {
   const [activeChat, setActiveChat] = useState(activeConversation);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-  const [showComposer, setShowComposer] = useState(false);
+
   const [composerContent, setComposerContent] = useState('');
 
   // Function to handle adding content to composer
   const handleAddToComposer = (content: string) => {
     setComposerContent(content);
-    setShowComposer(true);
+
   };
 
   return (
@@ -60,7 +60,7 @@ const ChatInterface: React.FC = () => {
         </div>
 
         {/* Details Sidebar - Hidden on mobile and can be toggled */}
-        <div className={`${isSidebarOpen ? 'flex' : 'hidden'} lg:flex flex-col w-full md:w-1/4 border-l border-gray-200`}>
+        <div className={`${isSidebarOpen ? 'flex' : 'hidden'} lg:flex  flex-col w-full md:w-1/4 border-l border-gray-200`}>
           <DetailsSidebar  conversation={activeChat} onAddToComposer={handleAddToComposer} />
         </div>
       </div>

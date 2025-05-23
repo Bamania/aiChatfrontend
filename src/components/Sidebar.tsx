@@ -19,11 +19,16 @@ const DetailsSidebar: React.FC<DetailsSidebarProps> = ({ conversation, onAddToCo
   const [aiStatus, setAiStatus] = useState<null | string>(null);
  
   useEffect(() => {
-    // Scroll to bottom whenever messages change
+    // Enhanced scrolling behavior that ensures messages are visible
     if (chatContainerRef.current) {
-      chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+      // Use a small timeout to ensure DOM updates are complete
+      setTimeout(() => {
+        if (chatContainerRef.current) {
+          chatContainerRef.current.scrollTop = chatContainerRef.current.scrollHeight;
+        }
+      }, 100);
     }
-  }, [chatMessages]);
+  }, [chatMessages, aiStatus]); // Also scroll when AI status changes
 
   const updateAicontext = (msg: string) => {
     console.log("message from server", msg);
@@ -108,7 +113,7 @@ const DetailsSidebar: React.FC<DetailsSidebarProps> = ({ conversation, onAddToCo
 
 
   return (
-    <div className="flex flex-col h-full border-l border-gray-200">
+    <div className="flex flex-col h-full border-l  border-gray-200">
       {/* Header Tabs - match image style */}
       <div className="flex border-b border-gray-200 h-12 items-end px-2">
         <button 
@@ -139,7 +144,7 @@ const DetailsSidebar: React.FC<DetailsSidebarProps> = ({ conversation, onAddToCo
       </div>
 
       {activeTab === 'copilot' && (
-        <div className="flex-1 flex flex-col bg-[#FAFAFB]">
+        <div className="flex-1 flex flex-col bg-[#FAFAFB] overflow-hidden">
           {chatMessages.length === 0 ? (
             <div className="flex-1 flex flex-col items-center justify-center">
               {/* Centered icon and text */}
@@ -153,7 +158,7 @@ const DetailsSidebar: React.FC<DetailsSidebarProps> = ({ conversation, onAddToCo
                     <rect x="11.25" y="12.5" width="1.5" height="0.5" rx="0.25" fill="#1F2937"/>
                   </svg>
                 </div>
-                <h3 className="text-lg font-medium mb-2">Hi, I'm Fin AI Copilot</h3>
+                <h3 className="text-lg font-medium mb-2">Hi, I'm Becha Ai</h3>
                 <p className="text-gray-500 text-sm mb-4">Ask me anything about this conversation.</p>
               </div>              {/* Show only one suggestion from WebSocket if available */}
               {aiData && aiData.suggestions && aiData.suggestions.length > 0 && (
@@ -187,7 +192,11 @@ const DetailsSidebar: React.FC<DetailsSidebarProps> = ({ conversation, onAddToCo
               )}
             </div>
           ) : (
-            <div className="flex-1 overflow-y-scroll px-4 py-3" ref={chatContainerRef}>
+            <div 
+              className="flex-1 overflow-y-auto px-4 py-3 scroll-smooth" 
+              ref={chatContainerRef}
+              style={{ scrollBehavior: 'smooth' }}
+            >
               {/* Chat messages */}
               <div className="space-y-3">
                 {chatMessages.map((message, index) => (
@@ -199,24 +208,25 @@ const DetailsSidebar: React.FC<DetailsSidebarProps> = ({ conversation, onAddToCo
                         className={`max-w-3/4 py-2 px-3 rounded-lg ${
                           message.isUser 
                             ? 'bg-blue-500 text-white rounded-br-none' 
-                            : 'bg-white text-gray-800 border border-gray-200 rounded-bl-none'
+                            : 'bg-gradient-to-r from-purple-100 to-purple-200 text-gray-800 border border-gray-200 rounded-bl-none'
                         }`}
                       >
                         {message.text}
-                      </div>
+                      
                       
                       {/* Add to Composer button for AI messages */}
                       {!message.isUser && onAddToComposer && (
                         <button
                           onClick={() => onAddToComposer(message.text)}
-                          className="text-blue-600 text-xs mt-1 flex items-center hover:text-blue-800 transition-colors"
+                          className="text-blue-600 text-xs mt-2 flex items-center bg-white rounded-lg p-3 transition-all duration-200 ease-in-out opacity-90 hover:opacity-100 transform hover:scale-105"
                         >
                           <svg width="12" height="12" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" className="mr-1">
-                            <path d="M12 4V20M20 12L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                          <path d="M12 4V20M20 12L4 12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
                           </svg>
                           Add to Composer
                         </button>
                       )}
+                      </div>
                     </div>
                   </div>
                 ))}
@@ -224,7 +234,7 @@ const DetailsSidebar: React.FC<DetailsSidebarProps> = ({ conversation, onAddToCo
                 {/* AI Status thinking indicator */}
                 {aiStatus && (
                   <div className="flex justify-start">
-                    <div className="bg-gray-100 text-gray-700 py-2 px-3 rounded-lg max-w-3/4 flex items-center animate-pulse">
+                    <div className="bg-gradient-to-r from-purple-100 to-purple-200 text-gray-700 py-2 px-3 rounded-lg max-w-3/4 flex items-center animate-pulse border border-gray-200">
                       {aiStatus === "Thinking..." && <span className="mr-2">🧠</span>}
                       {aiStatus === "Looking for an answer..." && <span className="mr-2">🔍</span>}
                       {aiStatus === "Generating response..." && <span className="mr-2">⚙️</span>}
