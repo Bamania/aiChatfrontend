@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { Users, TvMinimal, Bot } from 'lucide-react';
 // Fix the Avatar import
-import { Avatar, AvatarFallback, AvatarImage } from '@radix-ui/react-avatar';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 import { connectWebSocket } from '@/lib/useSocket';
 import { AIResponse, DetailsSidebarProps } from './types';

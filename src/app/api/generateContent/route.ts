@@ -6,7 +6,6 @@ const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 export async function POST(request: Request) {
   // Parse the request body
   const body = await request.json();
-  console.log("from the frontend", body);
   const { chatSuggestion, stream = true } = body;
 
   if (stream) {
@@ -50,7 +49,7 @@ export async function POST(request: Request) {
         }
       }
     });
-     console.log("readable stream !",readableStream)
+    
     return new Response(readableStream, {
       headers: {
         'Content-Type': 'text/plain; charset=utf-8',

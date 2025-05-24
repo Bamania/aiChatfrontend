@@ -1,3 +1,5 @@
+
+import { Conversation } from '../feature/types';
 export interface AIResponse {
   suggestions?: string[];
   content?: string;
@@ -5,14 +7,6 @@ export interface AIResponse {
 }
 
 // Define a proper Conversation type
-export interface Conversation {
-  id: string;
-  title?: string;
-  messages: Message[];
-  createdAt: Date;
-  updatedAt: Date;
-  status?: 'active' | 'archived';
-}
 
 export interface DetailsSidebarProps {
   onAddToComposer?: (content: string) => void;
@@ -34,15 +28,7 @@ export interface ConversationListProps {
 export interface WebSocketMessage {
   type?: string;
   content?: string;
-  data?: unknown;
-  [key: string]: unknown;
-}
-
-// Add other interfaces as needed
-export interface Message {
-  id: string;
-  content: string;
-  sender: 'user' | 'agent';
-  timestamp: Date;
-  status?: 'sent' | 'seen';
+  sender?: string;
+  timestamp?: string;
+  id?: string;
 }

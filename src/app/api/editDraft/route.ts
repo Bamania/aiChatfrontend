@@ -4,34 +4,31 @@ import { GoogleGenAI } from "@google/genai";
 const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
 
 // Im using  NAIVE NEXT REQUEST AS THE reqeuest param,since the api aint that complex 
-export async function POST(request: NextRequest) {
-  try {
+export async function POST(request: NextRequest) {  try {
     // Parse the request body
     const body = await request.json();
-    console.log("naive req.json",body)
     const {draftContent,tone}=body;
 
     const response = await ai.models.generateContent({
-        model: "gemini-2.0-flash",
-        contents: `
-            Please rewrite the following content in a ${tone} tone:
+      model: "gemini-2.0-flash",
+      contents: `
+  Please rewrite the following content in a ${tone} tone:
 
-            "${draftContent}"
+  "${draftContent}"
 
-            Respond ONLY with a valid JSON object in this exact format:
-            {"content": "REPHRASED_CONTENT_HERE"}
+  Respond ONLY with a valid JSON object in this exact format:
+  {"content": "REPHRASED_CONTENT_HERE"}
 
-            Do not include any explanations, markdown, or extra text. Only return the JSON object as specified.
-        `,
+  Do not include any explanations, markdown, or extra text. Only return the JSON object as specified.
+      `,
     });
-          console.log("response text !",response.text)
-     const SplitResponse = response.text?.split("`")
+      const SplitResponse = response.text?.split("`")
       if (!SplitResponse) {
-        return { content: [] };
+        return NextResponse.json({ content: [] }, { status: 400 });
       }
       const newDraft = SplitResponse[3]?.split("json")
       if (!newDraft || !newDraft[1]) {
-        return { content: [] };
+        return NextResponse.json({ content: [] }, { status: 400 });
       }
       const getParsedcontent = JSON.parse(newDraft[1]);
 
@@ -49,11 +46,4 @@ export async function POST(request: NextRequest) {
       { status: 500 }
     );
   }
-}
-
-// Helper function - replace with your actual content processing logic
-function processContent(content: string, action?: string): string[] {
-  // Your content processing logic here
-  // This is just a placeholder
-  return [content];
 }

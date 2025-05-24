@@ -1,6 +1,6 @@
 "use client"
 import React, { useEffect, useState, useRef } from 'react';
-import { MoreHorizontal, MoonStar, X,  Paperclip, Smile, Zap, Square, ChevronDown,  Brush, Loader2 } from 'lucide-react';
+import { MoreHorizontal, MoonStar, X,  Paperclip, Smile, Zap,  Square, ChevronDown,  Brush, Loader2 } from 'lucide-react';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -11,49 +11,38 @@ import {
 import {  Message } from '../feature/types';
 import { Avatar, AvatarFallback, AvatarImage } from '@radix-ui/react-avatar';
 import { connectWebSocket, sendMessage } from '@/lib/useSocket';
-import { ChatWindowProps, WebSocketMessage } from './types';
+import { ChatWindowProps } from './types';
 
-const ChatWindow: React.FC<ChatWindowProps> = ({ conversation, onToggleSidebar, initialContent='' }) => {
-  
+const ChatWindow: React.FC<ChatWindowProps> = ({ conversation, onToggleSidebar, initialContent = '' }) => {
+
   const [messages, setMessages] = useState<Message[]>(conversation.messages || []);
-  const [content, setContent] = useState(initialContent);
- //to track the content 
-  const [AiIcon, setAiIcon] = useState(!!initialContent.trim());
+  const [content, setContent] = useState(initialContent)
+  
+  const [AiIcon, setAiIcon] = useState(false)
   const [isLoadingAI, setIsLoadingAI] = useState(false);
- 
+
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
 
   useEffect(() => {
     if (initialContent) {
       setContent(initialContent);
-      setAiIcon(!!initialContent.trim());
-      // Ensure the composer is open when content is added (imp edge cases)
+         setAiIcon(initialContent.trim().length > 0);
     }
   }, [initialContent]);
 
   useEffect(() => {
-    // the callback function here will define the way u want to handle the data !
     const socket = connectWebSocket(handleIncomingResponse);
     
     return () => {
       socket.close(); 
     };
   }, []);
-  
-   const handleIncomingResponse = (msg: WebSocketMessage) => {
-    console.log("Incoming response", msg);
-  };
 
+  const handleIncomingResponse = (msg: any) => {
+    console.log("Incoming response", msg)
+  }
 
-  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setContent(e.target.value);
-
-    if(e.target.value.trim() === '') {
-      setAiIcon(false);
-    } else {
-      setAiIcon(true);
-    }
-  };
+ 
 
   const handleToneSelection = async (tone: string) => {
     if (!content.trim()) return;
@@ -61,13 +50,13 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation, onToggleSidebar, 
     try {
       setIsLoadingAI(true);
       
-      const response = await fetch('/api/generateContent', {
+      const response = await fetch('/api/editDraft', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          chatSuggestion: content,
+          draftContent: content,
           tone: tone
         }),
       });
@@ -85,32 +74,35 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation, onToggleSidebar, 
     }
   };
 
+  const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setContent(e.target.value);
+
+    if(e.target.value.trim() === '') {
+      setAiIcon(false);
+    } else {
+      setAiIcon(true);
+    }
+  }
+
   const handleSendMessage = () => {
     if (!content.trim()) return;
     
-    // Send message to websocket
     sendMessage(content);
     
-    // Create new message object
     const newMsg: Message = {
       id: `msg-${Date.now()}`,
       content: content,
-      sender: 'agent', // Assuming 'agent' means messages sent by the current user
+      sender: 'agent',
       timestamp: new Date(),
       status: 'sent'
     };
     
-    // Add message to the messages array
     setMessages([...messages, newMsg]);
-    
-    // Clear the input field
     setContent('');
-    // Also hide the icon since content is now empty
-    setAiIcon(false);
+    setAiIcon(false); // Reset AI icon when content is cleared
   };
 
   const formatTimestamp = (timestamp: Date) => {
-    // Simple formatting for demo purposes
     return new Date(timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
   };
 
@@ -197,46 +189,67 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation, onToggleSidebar, 
           <div className="px-4 py-2 flex items-center border-b gap-3 border-gray-100 rounded-t-md shadow-sm">
             <div className="flex items-center text-base font-semibold text-gray-800">
               <span className="mr-1">Chat</span>
+              {AiIcon && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button 
+                      className="flex items-center bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full ml-2 text-xs font-medium hover:bg-blue-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      disabled={isLoadingAI}
+                    >
+                      {isLoadingAI ? (
+                        <>
+                          <Loader2 size={12} className="mr-1 animate-spin" />
+                          Drafting...
+                        </>
+                      ) : (
+                        <>
+                          <Brush size={14} className="mr-1" />
+                          AI Draft
+                          <ChevronDown size={12} className="ml-1" />
+                        </>
+                      )}
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start" className="w-48">
+                    <DropdownMenuItem 
+                      onClick={() => handleToneSelection('professional')} 
+                      className="cursor-pointer"
+                      disabled={isLoadingAI}
+                    >
+                      <span className="mr-2">💼</span> Professional
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => handleToneSelection('friendly')} 
+                      className="cursor-pointer"
+                      disabled={isLoadingAI}
+                    >
+                      <span className="mr-2">😊</span> More friendly
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => handleToneSelection('formal')} 
+                      className="cursor-pointer"
+                      disabled={isLoadingAI}
+                    >
+                      <span className="mr-2">🎩</span> More formal
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => handleToneSelection('fix')} 
+                      className="cursor-pointer"
+                      disabled={isLoadingAI}
+                    >
+                      <span className="mr-2">✏️</span> Fix grammar & spelling
+                    </DropdownMenuItem>
+                    <DropdownMenuItem 
+                      onClick={() => handleToneSelection('translate')} 
+                      className="cursor-pointer"
+                      disabled={isLoadingAI}
+                    >
+                      <span className="mr-2">🌐</span> Translate...
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
             </div>
-            
-            {AiIcon && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <button className="flex items-center bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full ml-2 text-xs font-medium hover:bg-blue-200 transition-colors">
-                    <Brush size={14} className="mr-1" />
-                    {isLoadingAI ? (
-                      <>
-                        <Loader2 size={12} className="mr-1 animate-spin" />
-                        Drafting...
-                      </>
-                    ) : (
-                      <>
-                        AI Draft
-                        <ChevronDown size={12} className="ml-1" />
-                      </>
-                    )}
-                  </button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="start" className="w-48">
-                  <DropdownMenuItem onClick={() => handleToneSelection('professional')} className="cursor-pointer">
-                    <span className="mr-2">💼</span> Professional
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleToneSelection('friendly')} className="cursor-pointer">
-                    <span className="mr-2">😊</span> More friendly
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleToneSelection('formal')} className="cursor-pointer">
-                    <span className="mr-2">🎩</span> More formal
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleToneSelection('fix')} className="cursor-pointer">
-                    <span className="mr-2">✏️</span> Fix grammar & spelling
-                  </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => handleToneSelection('translate')} className="cursor-pointer">
-                    <span className="mr-2">🌐</span> Translate...
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-            
             <div className="ml-auto flex items-center space-x-2">
               <button
                 className="p-1 rounded-full hover:bg-blue-100 transition-colors"
@@ -256,19 +269,28 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation, onToggleSidebar, 
           {/* Input area */}
           <div className="p-3">
             <textarea
+              ref={textareaRef}
               className="w-full bg-transparent resize-none focus:outline-none text-sm min-h-[60px]"
               placeholder="Use ⌘K for shortcuts"
               rows={1}
               value={content}
               onChange={handleChange}
+              disabled={isLoadingAI}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
-                  e.preventDefault();
-                  handleSendMessage();
+                  e.preventDefault()
+                  handleSendMessage()
                 }
               }}
-              ref={textareaRef}
             />
+            {isLoadingAI && (
+              <div className="flex items-center justify-center py-2">
+                <div className="flex items-center text-blue-600 text-sm">
+                  <Loader2 size={16} className="mr-2 animate-spin" />
+                  AI is generating content...
+                </div>
+              </div>
+            )}
           </div>
           
           {/* Footer */}
@@ -296,6 +318,8 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation, onToggleSidebar, 
             </div>
           </div>
         </div>
+        
+        {/* Remove the AI button from here since it's now in the header */}
       </div>
     </div>
   );

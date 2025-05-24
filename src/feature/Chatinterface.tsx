@@ -1,35 +1,47 @@
 "use client"
 import React, { useState } from 'react';
 import ConversationList from '../components/Conversational';
-import ChatWindow from '../components/Chatwindow'
+import ChatWindow from '../components/Chatwindow';
 import DetailsSidebar from '../components/Sidebar';
-
 import { conversations, activeConversation } from '../mockdata/data';
 
 const ChatInterface: React.FC = () => {
   const [activeChat, setActiveChat] = useState(activeConversation);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-
   const [composerContent, setComposerContent] = useState('');
 
   // Function to handle adding content to composer
   const handleAddToComposer = (content: string) => {
     setComposerContent(content);
+  };
 
+  const handleSelectConversation = (id: string) => {
+    const selected = conversations.find(c => c.id === id);
+    if (selected) {
+      setActiveChat(selected);
+      setIsMobileMenuOpen(false);
+    }
+  };
+
+  const handleToggleSidebar = () => {
+    setIsSidebarOpen(!isSidebarOpen);
+  };
+
+  const handleToggleMobileMenu = () => {
+    setIsMobileMenuOpen(!isMobileMenuOpen);
   };
 
   return (
     <div className="flex flex-col w-full max-w-7xl h-[85vh]">
-      {/* Composer section */}
-      
-      
       <div className="flex flex-1 bg-white rounded-lg shadow-xl overflow-hidden">
         {/* Mobile menu button */}
         <div className="md:hidden absolute top-4 left-4 z-50">
           <button 
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+            onClick={handleToggleMobileMenu}
             className="p-2 bg-white rounded-full shadow-md"
+            type="button"
+            aria-label="Toggle mobile menu"
           >
             {isMobileMenuOpen ? '✕' : '☰'}
           </button>
@@ -40,13 +52,7 @@ const ChatInterface: React.FC = () => {
           <ConversationList 
             conversations={conversations} 
             activeId={activeChat.id} 
-            onSelectConversation={(id) => {
-              const selected = conversations.find(c => c.id === id);
-              if (selected) {
-                setActiveChat(selected);
-                setIsMobileMenuOpen(false);
-              }
-            }} 
+            onSelectConversation={handleSelectConversation}
           />
         </div>
 
@@ -55,13 +61,16 @@ const ChatInterface: React.FC = () => {
           <ChatWindow 
             conversation={activeChat} 
             initialContent={composerContent}
-            onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
+            onToggleSidebar={handleToggleSidebar}
           />
         </div>
 
         {/* Details Sidebar - Hidden on mobile and can be toggled */}
-        <div className={`${isSidebarOpen ? 'flex' : 'hidden'} lg:flex  flex-col w-full md:w-1/4 border-l border-gray-200`}>
-          <DetailsSidebar  conversation={activeChat} onAddToComposer={handleAddToComposer} />
+        <div className={`${isSidebarOpen ? 'flex' : 'hidden'} lg:flex flex-col w-full md:w-1/4 border-l border-gray-200`}>
+          <DetailsSidebar 
+            // conversation={activeChat} 
+            onAddToComposer={handleAddToComposer} 
+          />
         </div>
       </div>
     </div>
