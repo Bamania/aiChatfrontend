@@ -40,6 +40,24 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation, onToggleSidebar, 
 
   const handleIncomingResponse = (msg: any) => {
     console.log("Incoming response", msg)
+    // Add this: Parse and handle the response
+    try {
+      const parsedResponse = JSON.parse(msg);
+      
+      // Stop loading state when response is received
+      setIsLoadingAI(false);
+      
+      // Update content with AI response
+      if (parsedResponse.content) {
+        setContent(parsedResponse.content);
+      }
+      
+      
+
+    } catch (error) {
+      console.error("Error parsing WebSocket response:", error);
+      setIsLoadingAI(false);
+    }
   }
 
  
@@ -138,10 +156,10 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation, onToggleSidebar, 
             <div key={message.id} className={`flex ${message.sender === 'user' ? 'justify-start' : 'justify-end'}`}>
               <div className={`flex max-w-[80%] ${message.sender === 'user' ? 'flex-row' : 'flex-row-reverse'}`}>
                 {message.sender === 'user' && (
-                  <div className="flex-shrink-0 mr-2">
+                  <div className="flex-shrink-0 mr-2 mt-2 ">
                     <Avatar>
                       <AvatarImage src={conversation.avatar} alt={conversation.name} />
-                      <AvatarFallback className={conversation.avatarColor}>{conversation.name[0]}</AvatarFallback>
+                      <AvatarFallback className="bg-yellow-600 p-1 rounded-full   ">{conversation.name[0]}</AvatarFallback>
                     </Avatar>
                   </div>
                 )}
@@ -172,13 +190,7 @@ const ChatWindow: React.FC<ChatWindowProps> = ({ conversation, onToggleSidebar, 
             </div>
           ))}
           
-          {conversation.waitingNotice && (
-            <div className="flex justify-center my-4">
-              <div className="bg-yellow-100 text-yellow-800 px-4 py-2 rounded-full text-sm">
-                {conversation.waitingNotice}
-              </div>
-            </div>
-          )}
+        
         </div>
       </div>
       

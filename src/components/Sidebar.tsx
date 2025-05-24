@@ -19,6 +19,7 @@ const DetailsSidebar: React.FC<DetailsSidebarProps> = ({ onAddToComposer }) => {
   const [streamingText, setStreamingText] = useState<string>('');
   const [isStreaming, setIsStreaming] = useState<boolean>(false);
   console.log(isStreaming)
+   
   useEffect(() => { 
     // Enhanced scrolling behavior that ensures messages are visible
     if (chatContainerRef.current) {

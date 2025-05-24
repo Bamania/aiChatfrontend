@@ -22,7 +22,7 @@ export const conversations: Conversation[] = [
       },
     
     ],
-    waitingNotice: 'This customer has been waiting for 5 minutes.'
+  
   }
 ];
 
